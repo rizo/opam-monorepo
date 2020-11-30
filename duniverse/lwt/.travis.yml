@@ -58,7 +58,7 @@ scripts:
         fi
       - eval `opam env`
       - opam --version
-      - ocaml -version
+      - ocaml -version || true # "|| true" is a temp fix for OCaml 4.12: https://github.com/ocaml/ocaml/pull/9798
 
       - opam pin add --no-action ounit 2.0.8 # 2.1.2 release is broken.
       - CACHED=yes
@@ -155,20 +155,26 @@ scripts:
 matrix:
   include:
     - <<: *opam
+      os: linux
+      env: COMPILER=4.12.0+trunk REPOSITORIES=--repo=default,beta=git://github.com/ocaml/ocaml-beta-repository.git
+    - <<: *opam
+      os: linux
+      env: COMPILER=4.11.1
+    - <<: *opam
       os: osx
-      env: COMPILER=4.10.0 LIBEV=no
+      env: COMPILER=4.10.1 LIBEV=no
     - <<: *opam
       os: linux
-      env: COMPILER=4.10.0 LIBEV=no PPX_LET=yes COVERAGE=yes
+      env: COMPILER=4.10.1 LIBEV=no PPX_LET=yes COVERAGE=yes
     - <<: *opam
       os: linux
-      env: COMPILER=4.09.0
+      env: COMPILER=4.09.1 DOCS=yes
     - <<: *opam
       os: linux
       env: COMPILER=4.08.1+musl+flambda MUSL=yes
     - <<: *opam
       os: linux
-      env: COMPILER=4.07.1 DOCS=yes
+      env: COMPILER=4.07.1
     - <<: *opam
       os: linux
       env: COMPILER=4.06.1 LWT_STRESS_TEST=true
@@ -189,9 +195,9 @@ matrix:
       env: ESY=yes
 
   allow_failures:
-    - env: COMPILER=4.09.0
+    - env: COMPILER=4.09.0 DOCS=yes
     - env: COMPILER=4.08.1+musl+flambda MUSL=yes
-    - env: COMPILER=4.07.1 DOCS=yes
+    - env: COMPILER=4.07.1
     - env: COMPILER=4.06.1 LWT_STRESS_TEST=true
     - env: COMPILER=4.05.0+bytecode-only
     - env: COMPILER=4.04.2

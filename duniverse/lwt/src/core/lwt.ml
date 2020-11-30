@@ -631,7 +631,7 @@ struct
     fun
       (type u)
       (type c)
-      (p : ('a, u, c) promise) ->
+      (p : ('a, u, c) promise) : ('a, underlying, c) promise ->
 
     match p.state with
     | Fulfilled _ -> (p : (_, underlying, _) promise)
@@ -2440,6 +2440,20 @@ end
 include Sequential_composition
 
 
+(* This belongs with the [protected] and such, but it depends on primitives from
+   [Sequential_composition]. *)
+let wrap_in_cancelable p =
+ let Internal p_internal = to_internal_promise p in
+ let p_underlying = underlying p_internal in
+ match p_underlying.state with
+ | Fulfilled _ -> p
+ | Rejected _ -> p
+ | Pending _ ->
+   let p', r = task () in
+   on_cancel p' (fun () -> cancel p);
+   on_any p (wakeup r) (wakeup_exn r);
+   p'
+
 
 module Concurrent_composition :
 sig
@@ -2992,6 +3006,7 @@ sig
   val wakeup_paused : unit -> unit
   val paused_count : unit -> int
   val register_pause_notifier : (int -> unit) -> unit
+  val abandon_paused : unit -> unit
 
   (* Internal interface for other modules in Lwt *)
   val poll : 'a t -> 'a option
@@ -3086,6 +3101,10 @@ struct
     end
 
   let register_pause_notifier f = pause_hook := f
+
+  let abandon_paused () =
+    Lwt_sequence.clear paused;
+    paused_count := 0
 
   let paused_count () = !paused_count
 end

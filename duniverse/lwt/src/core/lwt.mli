@@ -688,7 +688,7 @@ val finalize : (unit -> 'a t) -> (unit -> unit t) -> 'a t
 {[
 let () =
   Lwt_main.run begin
-    let%lwt file = Lwt_io.(open_file Input "code.ml") in
+    let%lwt file = Lwt_io.(open_file ~mode:Input "code.ml") in
     Lwt.finalize
       (fun () ->
         let%lwt content = Lwt_io.read file in
@@ -706,7 +706,7 @@ let () =
 {[
 let () =
   Lwt_main.run begin
-    let%lwt file = Lwt_io.(open_file Input "code.ml") in
+    let%lwt file = Lwt_io.(open_file ~mode:Input "code.ml") in
     begin
       let%lwt content = Lwt_io.read file in
       Lwt_io.print content
@@ -1185,6 +1185,11 @@ val no_cancel : 'a t -> 'a t
 
     Note that [p'] can still be canceled if [p] is canceled. [Lwt.no_cancel]
     only prevents cancellation of [p] and [p'] through [p']. *)
+
+val wrap_in_cancelable : 'a t -> 'a t
+(** [Lwt.wrap_in_cancelable p] creates a {{: #VALcancel} cancelable} promise
+    [p'] with the same state as [p]. Cancellation carries onto [p], but [p'] is
+    rejected with {!Lwt.Canceled} even if [p] is not cancelable. *)
 
 
 
@@ -1816,6 +1821,12 @@ val register_pause_notifier : (int -> unit) -> unit
 
     Only one such function can be registered at a time. There is only a single
     internal reference cell available for this purpose.
+
+    This function is intended for internal use by Lwt. *)
+
+val abandon_paused : unit -> unit
+(** Causes promises created with {!Lwt.pause} to remain forever pending. See
+    {!Lwt_main.abandon_yielded_and_paused}.
 
     This function is intended for internal use by Lwt. *)
 
